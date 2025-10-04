@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>简易问卷调查系统</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#165DFF',
+                        secondary: '#36CFC9',
+                        success: '#52C41A',
+                        danger: '#FF4D4F',
+                        neutral: '#F5F5F5',
+                        'neutral-dark': '#262626'
+                    },
+                    fontFamily: {
+                        inter: ['Inter', 'system-ui', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .content-auto {
+                content-visibility: auto;
+            }
+            .card-shadow {
+                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            }
+        }
+    </style>
+</head>
+<body class="font-inter bg-gray-50 text-neutral-dark min-h-screen">
+    <!-- 顶部导航 -->
+    <header class="bg-white border-b border-gray-200 sticky top-0 z-50">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-2">
+                <i class="fa fa-list-alt text-primary text-2xl"></i>
+                <h1 class="text-xl font-bold text-primary">问卷星</h1>
+            </div>
+            <nav class="hidden md:flex space-x-6">
+                <button id="create-tab" class="nav-tab active py-2 font-medium text-primary border-b-2 border-primary">创建问卷</button>
+                <button id="fill-tab" class="nav-tab py-2 font-medium text-gray-600 hover:text-primary transition-colors">填写问卷</button>
+                <button id="results-tab" class="nav-tab py-2 font-medium text-gray-600 hover:text-primary transition-colors">查看结果</button>
+            </nav>
+            <button id="mobile-menu-btn" class="md:hidden text-gray-600">
+                <i class="fa fa-bars text-xl"></i>
+            </button>
+        </div>
+        <!-- 移动端菜单 -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-200">
+            <div class="container mx-auto px-4 py-2 flex flex-col space-y-3">
+                <button id="mobile-create-tab" class="py-2 font-medium text-primary text-left">创建问卷</button>
+                <button id="mobile-fill-tab" class="py-2 font-medium text-gray-600 text-left">填写问卷</button>
+                <button id="mobile-results-tab" class="py-2 font-medium text-gray-600 text-left">查看结果</button>
+            </div>
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-8">
+        <!-- 创建问卷区域 -->
+        <section id="create-section" class="tab-content">
+            <div class="bg-white rounded-xl p-6 card-shadow mb-6">
+                <h2 class="text-2xl font-bold mb-4">创建新问卷</h2>
+                <div class="mb-6">
+                    <label for="survey-title" class="block text-sm font-medium text-gray-700 mb-1">问卷标题 <span class="text-danger">*</span></label>
+                    <input type="text" id="survey-title" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all" placeholder="请输入问卷标题">
+                </div>
+                
+                <div class="mb-6">
+                    <div class="flex justify-between items-center mb-3">
+                        <h3 class="text-lg font-semibold">问题列表</h3>
+                        <button id="add-question" class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg flex items-center transition-all">
+                            <i class="fa fa-plus mr-2"></i> 添加问题
+                        </button>
+                    </div>
+                    
+                    <div id="questions-container" class="space-y-6">
+                        <!-- 初始问题模板 -->
+                        <div class="question-item p-4 border border-gray-200 rounded-lg">
+                            <div class="flex justify-between items-start mb-3">
+                                <div class="flex items-center">
+                                    <span class="question-number bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-sm mr-2">1</span>
+                                    <input type="text" class="question-text w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none" placeholder="请输入问题内容">
+                                </div>
+                                <div class="flex space-x-2">
+                                    <button class="delete-question text-gray-400 hover:text-danger p-2 transition-colors">
+                                        <i class="fa fa-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3 ml-8">
+                                <label class="flex items-center">
+                                    <input type="checkbox" class="question-required h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary">
+                                    <span class="ml-2 text-sm text-gray-700">设为必填项</span>
+                                </label>
+                            </div>
+                            
+                            <div class="ml-8">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">问题类型</label>
+                                <select class="question-type w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none">
+                                    <option value="text">文本输入</option>
+                                    <option value="radio">单选题</option>
+                                    <option value="checkbox">多选题</option>
+                                </select>
+                            </div>
+                            
+                            <div class="options-container mt-3 ml-8 space-y-2">
+                                <div class="flex items-center option-item">
+                                    <input type="text" class="option-text w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none" placeholder="选项内容">
+                                    <button class="delete-option text-gray-400 hover:text-danger p-2 ml-2 transition-colors">
+                                        <i class="fa fa-times"></i>
+                                    </button>
+                                </div>
+                                <button class="add-option text-primary hover:text-primary/80 text-sm flex items-center transition-colors">
+                                    <i class="fa fa-plus-circle mr-1"></i> 添加选项
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="flex justify-end">
+                    <button id="generate-survey" class="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-lg font-medium flex items-center transition-all shadow-lg hover:shadow-xl">
+                        <i class="fa fa-link mr-2"></i> 生成问卷链接
+                    </button>
+                </div>
+            </div>
+            
+            <!-- 生成的链接区域 -->
+            <div id="survey-link-container" class="hidden bg-white rounded-xl p-6 card-shadow">
+                <h3 class="text-xl font-bold mb-4">问卷链接已生成</h3>
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <input type="text" id="survey-link" class="flex-1 px-4 py-3 border border-gray-300 rounded-lg bg-gray-50" readonly>
+                    <button id="copy-link" class="bg-secondary hover:bg-secondary/90 text-white px-4 py-3 rounded-lg font-medium transition-all">
+                        <i class="fa fa-copy mr-2"></i> 复制链接
+                    </button>
+                </div>
+                <p class="text-sm text-gray-500 mt-3">您可以将此链接分享给用户填写，所有提交结果将保存在"查看结果"页面</p>
+            </div>
+        </section>
+
+        <!-- 填写问卷区域 -->
+        <section id="fill-section" class="tab-content hidden">
+            <div class="bg-white rounded-xl p-6 card-shadow">
+                <h2 class="text-2xl font-bold mb-6 text-center">填写问卷</h2>
+                
+                <div class="mb-6">
+                    <label for="fill-survey-id" class="block text-sm font-medium text-gray-700 mb-1">请输入问卷链接或ID</label>
+                    <input type="text" id="fill-survey-id" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all" placeholder="例如: http://你的页面地址?survey=xxx 或直接输入ID">
+                    <button id="load-survey" class="mt-3 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition-all">
+                        <i class="fa fa-search mr-2"></i> 加载问卷
+                    </button>
+                </div>
+                
+                <div id="survey-form-container" class="hidden mt-6 border-t pt-6">
+                    <h3 id="survey-form-title" class="text-xl font-bold mb-6 pb-2 border-b"></h3>
+                    <form id="survey-form" class="space-y-6">
+                        <!-- 问卷内容将通过JS动态加载 -->
+                    </form>
+                    <div class="flex justify-center mt-8">
+                        <button type="submit" form="survey-form" class="bg-primary hover:bg-primary/90 text-white px-6 py-3 rounded-lg font-medium transition-all">
+                            <i class="fa fa-paper-plane mr-2"></i> 提交问卷
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 查看结果区域 -->
+        <section id="results-section" class="tab-content hidden">
+            <div class="bg-white rounded-xl p-6 card-shadow">
+                <h2 class="text-2xl font-bold mb-6">问卷结果</h2>
+                
+                <div class="mb-6">
+                    <label for="results-survey-id" class="block text-sm font-medium text-gray-700 mb-1">请输入问卷ID</label>
+                    <input type="text" id="results-survey-id" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all" placeholder="输入您创建的问卷ID">
+                    <button id="load-results" class="mt-3 bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg transition-all">
+                        <i class="fa fa-bar-chart mr-2"></i> 查看结果
+                    </button>
+                </div>
+                
+                <div id="survey-results-container" class="hidden mt-6 border-t pt-6">
+                    <h3 id="results-survey-title" class="text-xl font-bold mb-6 pb-2 border-b"></h3>
+                    
+                    <div id="submissions-list" class="space-y-6">
+                        <!-- 提交结果将通过JS动态加载 -->
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- 提交成功提示 -->
+    <div id="success-modal" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-xl p-8 max-w-md w-full mx-4 text-center">
+            <div class="w-16 h-16 bg-success/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <i class="fa fa-check text-3xl text-success"></i>
+            </div>
+            <h3 class="text-xl font-bold mb-2">提交成功</h3>
+            <p class="text-gray-600 mb-6">感谢您的参与，您的反馈已成功提交</p>
+            <button id="close-success-modal" class="bg-primary hover:bg-primary/90 text-white px-6 py-2 rounded-lg font-medium transition-all">
+                确定
+            </button>
+        </div>
+    </div>
+
+    <footer class="bg-white border-t border-gray-200 mt-12">
+        <div class="container mx-auto px-4 py-6 text-center text-gray-500 text-sm">
+            <p>简易问卷调查系统 &copy; 2023</p>
+        </div>
+    </footer>
+
+    <script>
+        // 数据存储相关
+        const STORAGE_KEYS = {
+            SURVEYS: 'surveys',
+            SUBMISSIONS: 'submissions'
+        };
+
+        // 生成唯一ID
+        function generateId() {
+            return Math.random().toString(36).substr(2, 9);
+        }
+
+        // 获取URL参数（用于提取问卷ID）
+        function getUrlParam(name) {
+            const params = new URLSearchParams(window.location.search);
+            return params.get(name);
+        }
+
+        // 获取所有问卷
+        function getSurveys() {
+            const surveys = localStorage.getItem(STORAGE_KEYS.SURVEYS);
+            return surveys ? JSON.parse(surveys) : {};
+        }
+
+        // 保存问卷
+        function saveSurvey(surveyId, surveyData) {
+            const surveys = getSurveys();
+            surveys[surveyId] = surveyData;
+            localStorage.setItem(STORAGE_KEYS.SURVEYS, JSON.stringify(surveys));
+        }
+
+        // 获取问卷
+        function getSurvey(surveyId) {
+            const surveys = getSurveys();
+            return surveys[surveyId] || null;
+        }
+
+        // 获取所有提交
+        function getSubmissions() {
+            const submissions = localStorage.getItem(STORAGE_KEYS.SUBMISSIONS);
+            return submissions ? JSON.parse(submissions) : {};
+        }
+
+        // 保存提交
+        function saveSubmission(surveyId, submissionData) {
+            const submissions = getSubmissions();
+            if (!submissions[surveyId]) {
+                submissions[surveyId] = [];
+            }
+            submissions[surveyId].push({
+                id: generateId(),
+                timestamp: new Date().toISOString(),
+                data: submissionData
+            });
+            localStorage.setItem(STORAGE_KEYS.SUBMISSIONS, JSON.stringify(submissions));
+        }
+
+        // 获取特定问卷的提交
+        function getSurveySubmissions(surveyId) {
+            const submissions = getSubmissions();
+            return submissions[surveyId] || [];
+        }
+
+        // 页面加载时自动检测问卷ID并加载
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查URL中是否有问卷ID参数（如 ?survey=xxx）
+            const surveyIdFromUrl = getUrlParam('survey');
+            if (surveyIdFromUrl) {
+                // 自动切换到填写区域并加载问卷
+                switchTab('fill');
+                document.getElementById('fill-survey-id').value = surveyIdFromUrl;
+                // 延迟加载，确保页面元素初始化完成
+                setTimeout(() => loadSurveyForFilling(), 500);
+            }
+
+            // 导航切换
+            const tabs = ['create', 'fill', 'results'];
+            tabs.forEach(tab => {
+                document.getElementById(`${tab}-tab`).addEventListener('click', () => switchTab(tab));
+                if (tab !== 'create') {
+                    document.getElementById(`mobile-${tab}-tab`).addEventListener('click', () => {
+                        switchTab(tab);
+                        toggleMobileMenu();
+                    });
+                }
+            });
+            
+            document.getElementById('mobile-create-tab').addEventListener('click', () => {
+                switchTab('create');
+                toggleMobileMenu();
+            });
+            
+            document.getElementById('mobile-menu-btn').addEventListener('click', toggleMobileMenu);
+            document.getElementById('add-question').addEventListener('click', addQuestion);
+            document.getElementById('generate-survey').addEventListener('click', generateSurvey);
+            document.getElementById('copy-link').addEventListener('click', copySurveyLink);
+            document.getElementById('load-survey').addEventListener('click', loadSurveyForFilling);
+            document.getElementById('load-results').addEventListener('click', loadSurveyResults);
+            document.getElementById('close-success-modal').addEventListener('click', () => {
+                document.getElementById('success-modal').classList.add('hidden');
+            });
+            
+            initQuestionEvents();
+        });
+
+        // 切换标签页
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`${tabName}-section`).classList.remove('hidden');
+            
+            document.querySelectorAll('.nav-tab').forEach(el => {
+                el.classList.remove('active', 'text-primary', 'border-b-2', 'border-primary');
+                el.classList.add('text-gray-600');
+            });
+            
+            document.getElementById(`${tabName}-tab`).classList.add('active', 'text-primary', 'border-b-2', 'border-primary');
+            document.getElementById(`${tabName}-tab`).classList.remove('text-gray-600');
+        }
+
+        // 切换移动端菜单
+        function toggleMobileMenu() {
+            document.getElementById('mobile-menu').classList.toggle('hidden');
+        }
+
+        // 添加问题
+        function addQuestion() {
+            const container = document.getElementById('questions-container');
+            const questionCount = container.children.length + 1;
+            
+            const questionTemplate = `
+                <div class="question-item p-4 border border-gray-200 rounded-lg">
+                    <div class="flex justify-between items-start mb-3">
+                        <div class="flex items-center">
+                            <span class="question-number bg-primary text-white w-6 h-6 rounded-full flex items-center justify-center text-sm mr-2">${questionCount}</span>
+                            <input type="text" class="question-text w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none" placeholder="请输入问题内容">
+                        </div>
+                        <div class="flex space-x-2">
+                            <button class="delete-question text-gray-400 hover:text-danger p-2 transition-colors">
+                                <i class="fa fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3 ml-8">
+                        <label class="flex items-center">
+                            <input type="checkbox" class="question-required h-4 w-4 text-primary border-gray-300 rounded focus:ring-primary">
+                            <span class="ml-2 text-sm text-gray-700">设为必填项</span>
+                        </label>
+                    </div>
+                    
+                    <div class="ml-8">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">问题类型</label>
+                        <select class="question-type w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none">
+                            <option value="text">文本输入</option>
+                            <option value="radio">单选题</option>
+                            <option value="checkbox">多选题</option>
+                        </select>
+                    </div>
+                    
+                    <div class="options-container mt-3 ml-8 space-y-2">
+                        <div class="flex items-center option-item">
+                            <input type="text" class="option-text w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none" placeholder="选项内容">
+                            <button class="delete-option text-gray-400 hover:text-danger p-2 ml-2 transition-colors">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </div>
+                        <button class="add-option text-primary hover:text-primary/80 text-sm flex items-center transition-colors">
+                            <i class="fa fa-plus-circle mr-1"></i> 添加选项
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', questionTemplate);
+            updateQuestionNumbers();
+            initQuestionEvents();
+        }
+
+        // 更新问题编号
+        function updateQuestionNumbers() {
+            document.querySelectorAll('.question-item').forEach((question, index) => {
+                question.querySelector('.question-number').textContent = index + 1;
+            });
+        }
+
+        // 初始化问题相关事件
+        function initQuestionEvents() {
+            // 删除问题
+            document.querySelectorAll('.delete-question').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    this.closest('.question-item').remove();
+                    updateQuestionNumbers();
+                });
+            });
+            
+            // 添加选项
+            document.querySelectorAll('.add-option').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const optionsContainer = this.parentElement;
+                    const optionTemplate = `
+                        <div class="flex items-center option-item">
+                            <input type="text" class="option-text w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none" placeholder="选项内容">
+                            <button class="delete-option text-gray-400 hover:text-danger p-2 ml-2 transition-colors">
+                                <i class="fa fa-times"></i>
+                            </button>
+                        </div>
+                    `;
+                    this.insertAdjacentHTML('beforebegin', optionTemplate);
+                    initOptionEvents();
+                });
+            });
+            
+            initOptionEvents();
+            
+            // 问题类型变更事件
+            document.querySelectorAll('.question-type').forEach(select => {
+                select.addEventListener('change', function() {
+                    const optionsContainer = this.closest('.question-item').querySelector('.options-container');
+                    optionsContainer.classList.toggle('hidden', this.value === 'text');
+                });
+                select.dispatchEvent(new Event('change'));
+            });
+        }
+
+        // 初始化选项相关事件
+        function initOptionEvents() {
+            document.querySelectorAll('.delete-option').forEach(button => {
+                button.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    if (this.closest('.options-container').querySelectorAll('.option-item').length > 1) {
+                        this.closest('.option-item').remove();
+                    } else {
+                        alert('至少保留一个选项');
+                    }
+                });
+            });
+        }
+
+        // 生成问卷链接（核心修改：使用当前页面URL + 参数）
+        function generateSurvey() {
+            const title = document.getElementById('survey-title').value.trim();
+            if (!title) {
+                alert('请输入问卷标题');
+                return;
+            }
+            
+            const questionItems = document.querySelectorAll('.question-item');
+            if (questionItems.length === 0) {
+                alert('请添加至少一个问题');
+                return;
+            }
+            
+            let isValid = true;
+            const questions = [];
+            
+            questionItems.forEach((item, index) => {
+                const questionText = item.querySelector('.question-text').value.trim();
+                const isRequired = item.querySelector('.question-required').checked;
+                const questionType = item.querySelector('.question-type').value;
+                
+                if (!questionText) {
+                    alert(`第${index + 1}个问题内容不能为空`);
+                    isValid = false;
+                    return;
+                }
+                
+                const question = {
+                    id: `q${index + 1}`,
+                    text: questionText,
+                    required: isRequired,
+                    type: questionType
+                };
+                
+                if (questionType === 'radio' || questionType === 'checkbox') {
+                    const options = [];
+                    item.querySelectorAll('.option-item').forEach((optionItem, optIndex) => {
+                        const optionText = optionItem.querySelector('.option-text').value.trim();
+                        if (!optionText) {
+                            alert(`第${index + 1}个问题的选项${optIndex + 1}不能为空`);
+                            isValid = false;
+                            return;
+                        }
+                        options.push({ id: `q${index + 1}_opt${optIndex + 1}`, text: optionText });
+                    });
+                    question.options = options;
+                }
+                
+                questions.push(question);
+            });
+            
+            if (!isValid) return;
+            
+            // 生成问卷ID
+            const surveyId = generateId();
+            // 保存问卷
+            saveSurvey(surveyId, {
+                id: surveyId,
+                title: title,
+                createdAt: new Date().toISOString(),
+                questions: questions
+            });
+            
+            // 生成链接：当前页面URL + ?survey=问卷ID（关键修改）
+            const currentUrl = window.location.href.split('?')[0]; // 去掉已有参数
+            const surveyLink = `${currentUrl}?survey=${surveyId}`;
+            document.getElementById('survey-link').value = surveyLink;
+            document.getElementById('survey-link-container').classList.remove('hidden');
+            document.getElementById('survey-link-container').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 复制问卷链接
+        function copySurveyLink() {
+            const linkInput = document.getElementById('survey-link');
+            linkInput.select();
+            document.execCommand('copy');
+            
+            const originalText = document.getElementById('copy-link').innerHTML;
+            document.getElementById('copy-link').innerHTML = '<i class="fa fa-check mr-2"></i> 已复制';
+            setTimeout(() => document.getElementById('copy-link').innerHTML = originalText, 2000);
+        }
+
+        // 加载问卷用于填写
+        function loadSurveyForFilling() {
+            let surveyIdInput = document.getElementById('fill-survey-id').value.trim();
+            if (!surveyIdInput) {
+                alert('请输入问卷链接或ID');
+                return;
+            }
+            
+            // 从链接中提取ID（如果输入的是带参数的链接）
+            if (surveyIdInput.includes('?survey=')) {
+                const params = new URLSearchParams(surveyIdInput.split('?')[1]);
+                surveyIdInput = params.get('survey') || surveyIdInput;
+            }
+            
+            const survey = getSurvey(surveyIdInput);
+            if (!survey) {
+                alert('未找到该问卷，请检查ID是否正确');
+                return;
+            }
+            
+            // 显示问卷表单
+            document.getElementById('survey-form-title').textContent = survey.title;
+            const formContainer = document.getElementById('survey-form');
+            formContainer.innerHTML = '';
+            
+            survey.questions.forEach(question => {
+                const questionContainer = document.createElement('div');
+                questionContainer.className = 'question-form-item';
+                
+                const questionLabel = document.createElement('label');
+                questionLabel.className = 'block text-base font-medium mb-3';
+                questionLabel.innerHTML = `${question.text} ${question.required ? '<span class="text-danger">*</span>' : ''}`;
+                questionContainer.appendChild(questionLabel);
+                
+                if (question.type === 'text') {
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.name = question.id;
+                    input.className = 'w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none';
+                    input.placeholder = '请输入您的答案';
+                    input.required = question.required;
+                    questionContainer.appendChild(input);
+                } else if (question.type === 'radio') {
+                    const optionsContainer = document.createElement('div');
+                    optionsContainer.className = 'space-y-2';
+                    
+                    question.options.forEach(option => {
+                        const optionWrapper = document.createElement('div');
+                        optionWrapper.className = 'flex items-center';
+                        
+                        const radio = document.createElement('input');
+                        radio.type = 'radio';
+                        radio.name = question.id;
+                        radio.value = option.id;
+                        radio.id = option.id;
+                        radio.className = 'h-4 w-4 text-primary border-gray-300 focus:ring-primary';
+                        radio.required = question.required;
+                        
+                        const label = document.createElement('label');
+                        label.htmlFor = option.id;
+                        label.className = 'ml-2 text-gray-700';
+                        label.textContent = option.text;
+                        
+                        optionWrapper.appendChild(radio);
+                        optionWrapper.appendChild(label);
+                        optionsContainer.appendChild(optionWrapper);
+                    });
+                    
+                    questionContainer.appendChild(optionsContainer);
+                } else if (question.type === 'checkbox') {
+                    const optionsContainer = document.createElement('div');
+                    optionsContainer.className = 'space-y-2';
+                    
+                    question.options.forEach(option => {
+                        const optionWrapper = document.createElement('div');
+                        optionWrapper.className = 'flex items-center';
+                        
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.name = `${question.id}[]`;
+                        checkbox.value = option.id;
+                        checkbox.id = option.id;
+                        checkbox.className = 'h-4 w-4 text-primary border-gray-300 focus:ring-primary';
+                        
+                        const label = document.createElement('label');
+                        label.htmlFor = option.id;
+                        label.className = 'ml-2 text-gray-700';
+                        label.textContent = option.text;
+                        
+                        optionWrapper.appendChild(checkbox);
+                        optionWrapper.appendChild(label);
+                        optionsContainer.appendChild(optionWrapper);
+                    });
+                    
+                    if (question.required) {
+                        const requiredHint = document.createElement('input');
+                        requiredHint.type = 'hidden';
+                        requiredHint.name = `${question.id}_required`;
+                        requiredHint.value = '1';
+                        optionsContainer.appendChild(requiredHint);
+                    }
+                    
+                    questionContainer.appendChild(optionsContainer);
+                }
+                
+                formContainer.appendChild(questionContainer);
+            });
+            
+            // 表单提交事件
+            formContainer.onsubmit = function(e) {
+                e.preventDefault();
+                
+                let isValid = true;
+                survey.questions.forEach(question => {
+                    if (question.type === 'checkbox' && question.required) {
+                        const checkboxes = formContainer.querySelectorAll(`input[name="${question.id}[]"]:checked`);
+                        if (checkboxes.length === 0) {
+                            alert(`"${question.text}" 为必填项，请至少选择一项`);
+                            isValid = false;
+                        }
+                    }
+                });
+                
+                if (!isValid) return false;
+                
+                // 收集表单数据
+                const formData = new FormData(formContainer);
+                const submissionData = {};
+                
+                survey.questions.forEach(question => {
+                    if (question.type === 'checkbox') {
+                        const values = [];
+                        formData.getAll(`${question.id}[]`).forEach(optionId => {
+                            const option = question.options.find(opt => opt.id === optionId);
+                            if (option) values.push(option.text);
+                        });
+                        submissionData[question.id] = { question: question.text, answer: values.join('; ') };
+                    } else {
+                        const value = formData.get(question.id) || '';
+                        submissionData[question.id] = { question: question.text, answer: value };
+                    }
+                });
+                
+                // 保存提交
+                saveSubmission(survey.id, submissionData);
+                document.getElementById('success-modal').classList.remove('hidden');
+                formContainer.reset();
+                return false;
+            };
+            
+            document.getElementById('survey-form-container').classList.remove('hidden');
+            document.getElementById('survey-form-container').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 加载问卷结果
+        function loadSurveyResults() {
+            const surveyId = document.getElementById('results-survey-id').value.trim();
+            if (!surveyId) {
+                alert('请输入问卷ID');
+                return;
+            }
+            
+            const survey = getSurvey(surveyId);
+            if (!survey) {
+                alert('未找到该问卷，请检查ID是否正确');
+                return;
+            }
+            
+            const submissions = getSurveySubmissions(surveyId);
+            document.getElementById('results-survey-title').textContent = `${survey.title} (共 ${submissions.length} 份提交)`;
+            const submissionsList = document.getElementById('submissions-list');
+            submissionsList.innerHTML = '';
+            
+            if (submissions.length === 0) {
+                submissionsList.innerHTML = '<p class="text-center py-8 text-gray-500">暂无提交结果</p>';
+            } else {
+                submissions.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+                           .forEach(submission => {
+                    const date = new Date(submission.timestamp);
+                    const formattedDate = `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}-${date.getDate().toString().padStart(2, '0')} ${date.getHours().toString().padStart(2, '0')}:${date.getMinutes().toString().padStart(2, '0')}`;
+                    
+                    submissionItem = document.createElement('div');
+                    submissionItem.className = 'border border-gray-200 rounded-lg p-4 mb-4';
+                    submissionItem.innerHTML = `
+                        <div class="flex justify-between items-center mb-4 pb-2 border-b">
+                            <h4 class="font-medium">提交 #${submission.id.substring(0, 6)}</h4>
+                            <span class="text-sm text-gray-500">${formattedDate}</span>
+                        </div>
+                        <div class="space-y-4">
+                            ${Object.values(submission.data).map(item => `
+                                <div>
+                                    <p class="font-medium mb-1">${item.question}</p>
+                                    <p class="text-gray-600 pl-2">${item.answer || '未填写'}</p>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                    submissionsList.appendChild(submissionItem);
+                });
+            }
+            
+            document.getElementById('survey-results-container').classList.remove('hidden');
+            document.getElementById('survey-results-container').scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
